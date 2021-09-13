@@ -1,0 +1,29 @@
+WITH query1 (code_student1, lesson_name1, sum_time)
+    AS (select student_id,
+        concat(module_id, '.', lesson_position, ' ', lesson_name) as Урок,
+        SUM(submission_time - attempt_time) as Время
+        from step_student
+            join step using(step_id)
+            join lesson using(lesson_id)
+        where submission_time - attempt_time <= 4 * 3600
+        group by 1,2
+        ),
+
+     query2 (code_student2, lesson_name2, lesson_time)
+    AS (select code_student1, lesson_name1, SUM(sum_time) / 3600
+        from query1
+        group by 1,2
+        ),
+
+     query3 (code_step3, avg_lesson_time)
+    AS (select lesson_name2, ROUND(AVG(lesson_time), 2)
+        from query2
+        group by 1
+        )
+select
+    ROW_NUMBER() OVER (ORDER BY avg(avg_lesson_time)) AS Номер,
+    code_step3 as Урок,
+    round((avg_lesson_time), 2) as Среднее_время
+    from query3
+group by 2
+order by 3
