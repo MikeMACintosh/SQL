@@ -1,1 +1,1 @@
-# sql
+Query's from SQL-course
