@@ -1,0 +1,93 @@
+Выделение групп пользователей по способу прохождения онлайн-курса:
+I группа - это те пользователи, которые после верной попытки решения шага делают неверную (скорее всего для того, чтобы поэкспериментировать или проверить, как работают примеры);
+II группа - это те пользователи, которые делают больше одной верной попытки для одного шага (возможно, улучшают свое решение или пробуют другой вариант);
+III группа - это те пользователи, которые не смогли решить задание какого-то шага (у них все попытки по этому шагу - неверные).
+
+Вывести группу (I, II, III), имя пользователя, количество шагов, которые пользователь выполнил по соответствующему способу.
+
+with group1
+as (select 
+    case when true then 'I' end as Группа,
+    student_name as Студент, step_id, result,
+    LAG(result) OVER (PARTITION BY student_name, step_id order by submission_time) as prev_result
+    from student join step_student using(student_id)
+    ),
+    
+group2
+as (select
+    case when true then 'II' end as Группа,
+    student_name as Студент, step_id, count(step_id) as Количество_попыток
+    from student join step_student using(student_id)
+    where result = 'correct'
+    group by student_name, step_id
+    having count(result) > 1
+    ),
+    
+group3 
+as (select 
+    case when true then 'III' end as Группа,
+    student_name as Студент, step_id, count(result),
+    sum(case when result='wrong' then 1 else 0 end) as sum_wrong
+    from student join step_student using(student_id)
+    group by student_name, step_id
+    having count(result) = sum(case when result='wrong' then 1 else 0 end)
+    )
+    
+select Группа, Студент, count(Студент) as Количество_шагов
+from group1
+where result = 'wrong' and prev_result = 'correct'
+group by 2
+
+union
+
+select Группа, Студент, count(Студент) as Количество_шагов 
+from group2
+group by 2
+
+union 
+
+select Группа, Студент, count(Студент) as Количество_шагов 
+from group3
+group by 2
+order by Группа, Количество_шагов desc, Студент
+
+
+Query result:
++--------+------------+------------------+
+| Группа | Студент    | Количество_шагов |
++--------+------------+------------------+
+| I      | student_15 | 2                |
+| I      | student_53 | 2                |
+| I      | student_11 | 1                |
+| I      | student_34 | 1                |
+| I      | student_35 | 1                |
+| I      | student_40 | 1                |
+| I      | student_57 | 1                |
+| I      | student_62 | 1                |
+| I      | student_9  | 1                |
+| II     | student_53 | 4                |
+| II     | student_62 | 4                |
+| II     | student_34 | 3                |
+| II     | student_60 | 3                |
+| II     | student_20 | 2                |
+| II     | student_35 | 2                |
+| II     | student_9  | 2                |
+| II     | student_11 | 1                |
+| II     | student_15 | 1                |
+| II     | student_30 | 1                |
+| II     | student_36 | 1                |
+| II     | student_39 | 1                |
+| II     | student_40 | 1                |
+| II     | student_46 | 1                |
+| II     | student_57 | 1                |
+| II     | student_59 | 1                |
+| III    | student_24 | 3                |
+| III    | student_33 | 1                |
+| III    | student_42 | 1                |
+| III    | student_50 | 1                |
+| III    | student_51 | 1                |
+| III    | student_59 | 1                |
+| III    | student_64 | 1                |
++--------+------------+------------------+
+
+
