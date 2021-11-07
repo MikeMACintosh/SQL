@@ -1,1 +1,1 @@
-Query's from SQL-course
+Query's from MySQL course
